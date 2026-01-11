@@ -1,66 +1,33 @@
-trigger:
-  branches:
-    include:
-      - main
+trigger: none
 
-# =========================
-# VARIABLES
-# =========================
-variables:
-  azureServiceConnection: 'fabric'
-  location: 'australiaeast'
-  rgName: 'rg-fabric-demo'
-  fabricCapacityName: 'fabriccapacitydemo'
-  fabricSkuName: 'F2'
-  miName: 'fabric-demo-identity'
-  adminUser: 'fabricuser@fabricguideoutlook.onmicrosoft.com'
+pool:
+  vmImage: 'ubuntu-latest'
 
-# =========================
-# STAGES
-# =========================
 stages:
-  - stage: DeployFabricInfra
-    displayName: "Deploy Microsoft Fabric Infrastructure"
-    jobs:
-      - job: Deploy
-        displayName: "Deploy Bicep via Azure CLI"
-        pool: 'Default'
+- stage: Test
+  displayName: Run unit tests
+  jobs:
+  - job: Execute
+    steps:
 
-        steps:
-          # -------------------------
-          # Checkout source
-          # -------------------------
-          - checkout: self
-            displayName: "Checkout repository"
+    - checkout: self
 
-          # -------------------------
-          # Azure Login
-          # -------------------------
-          - task: AzureCLI@2
-            displayName: "Deploy Fabric Infrastructure"
-            inputs:
-              azureSubscription: $(azureServiceConnection)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                echo "Deploying Fabric Infrastructure..."
-                az --version
+    - task: UseDotNet@2
+      displayName: 'Install .NET Runtime 8.0'
+      inputs:
+        packageType: 'sdk'
+        version: '8.x'
 
-                # Optional: Create RG if it doesn't exist
-                az group create \
-                  --name $(rgName) \
-                  --location $(location)
+    - bash: |
+        pip install data-factory-testing-framework
+        pip install pytest
+        echo "............  installed pip stuff    ............"
 
-                # Deploy the Bicep template
-                az deployment group create \
-                  --name fabricInfraDeploy-$(Build.BuildId) \
-                  --resource-group $(rgName) \
-                  --template-file ./bicep/fabric-infra.bicep \
-                  --parameters \
-                      location=$(location) \
-                      fabricCapacityName=$(fabricCapacityName) \
-                      fabricSkuName=$(fabricSkuName) \
-                      adminUser=$(adminUser) \
-                      miName=$(miName)
-
-                echo "Deployment completed successfully!"
+        pytest tests.py
+        if [ $? -ne 0 ]; then
+          echo "##vso[task.logissue type=error]Failing tests!"
+          exit 1 # Forces the Azure DevOps task to fail
+        fi
+        echo "YAY"
+      displayName: 'Run tests'
+    
