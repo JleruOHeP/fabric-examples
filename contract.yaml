@@ -1,0 +1,16 @@
+view: vw_customers
+
+columns:
+  - name: Customer
+    required: true
+
+  - name: CategoryType
+    required: true
+    expression_contains:
+      - "CASE Name"
+
+rules:
+  forbid:
+    - "SELECT *"
+    - "DROP"
+    - "TRUNCATE"
