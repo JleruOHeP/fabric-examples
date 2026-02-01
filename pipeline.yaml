@@ -42,7 +42,7 @@ stages:
           pip install ms-fabric-cli
 
           fab config set encryption_fallback_enabled true
-          fab auth login -u 0e0feaeb-874c-449c-921a-716555c2b903 -p $(sp_secret) --tenant 9891b9df-58a3-4626-8a97-d93855fff2f1
+          fab auth login -u 00000000-0000-0000-0000-000000000000 -p $(sp_secret) --tenant 00000000-0000-0000-0000-000000000000
 
           fab auth status
 
